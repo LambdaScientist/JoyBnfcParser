@@ -1,0 +1,12 @@
+all:
+	happy -gca ParJoy.y
+	alex -g LexJoy.x
+	ghc --make TestJoy.hs -o TestJoy
+
+clean:
+	-rm -f *.log *.aux *.hi *.o *.dvi
+
+distclean: clean
+	-rm -f DocJoy.* LexJoy.* ParJoy.* LayoutJoy.* SkelJoy.* PrintJoy.* TestJoy.* AbsJoy.* TestJoy ErrM.* SharedString.* ComposOp.* joy.dtd XMLJoy.* Makefile*
+	
+

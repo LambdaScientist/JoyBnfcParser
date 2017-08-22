@@ -1,0 +1,155 @@
+comment "#" ;
+comment "(*" "*)" ;
+-- entrypoints JoyFile;
+
+JoyFile . JoyFile ::= [Cycle] ;
+-- character-constant  ::=
+--         "'"  ( escaped-character | ordinary-character )
+token CharacterConstant ('\'' char) ;
+
+-- atomic-symbol  ::=
+--     any printing character which is not a reserved character
+--         or a digit or the single or double quote character
+--     { letter  |  digit  |  "="  |  "_"  |  "-" }
+token AtomicSymbol ( (letter | '_') (letter | digit | ["<>+=*/_-"])*
+                   | ["<>+=*/_-"]
+                   ) ;
+
+-- integer-constant  ::=
+--         [ "-" ]  ( "0" | "1" .. | "9" )  { "0" | "1" .. | "9" }
+token IntegerConstant (('-'|eps) digit+) ;
+token FloatConstant (('-'|eps) digit+ '.' digit+ ('e' '-'? digit+)?) ;
+
+-- reserved-character  ::=
+--         "["  |  "]"  |  "{"  |  "}"  |  ";"  |  "."
+rules ReservedCharacter ::= "[" | "]"
+                          | "{" | "}"
+                          | ";" | "." ;
+
+
+
+
+-- reserved-word  ::=
+--   "=="  |  "MODULE"  |  "PRIVATE"  |  "PUBLIC"  |  "END"
+--                             |  "HIDE"     |  "IN"
+--                                           |  "DEFINE"
+--                                           |  "LIBRA"   
+rules ReservedWord ::=
+    "=="     | "MODULE" | "PRIVATE" 
+  | "PUBLIC" | "END"    | "HIDE"
+  | "IN"     | "DEFINE" | "LIBRA"  ;
+
+
+
+--token  ::= reserved-character | reserved-word
+-- | integer-constant | float-constant
+-- | character-constant |  string-constant
+-- | atomic-symbol
+-- rules JoyToken ::= ReservedCharacter 
+--                  | ReservedWord
+--                  | IntegerConstant   
+--                  | FloatConstant
+--                  | CharacterConstant 
+--                  | String
+--                  | AtomicSymbol ;
+
+-- factor  ::=
+--         atomic-symbol
+--     |  integer-constant | float-constant
+--     |  character-constant | string-constant
+--     |  "{"  { character-constant | integer-constant } "}"
+--     |  "["  term  "]"
+rules Factor ::= AtomicSymbol
+    | IntegerConstant   | FloatConstant
+    | CharacterConstant | String
+    | "{" [IntOrCharConstant] "}"
+    | "[" [Factor] "]" ;
+
+rules IntOrCharConstant ::= IntegerConstant | CharacterConstant ;
+separator IntOrCharConstant "" ;
+
+-- term ::= { factor }
+separator Factor "" ;
+
+-- literal ::= "true" | "false"
+--   | integer-constant | float-constant
+--   | character-constant | string-constant
+--   | "{" { character-constant | integer-constant } "}"
+--   | "[" term "]"
+rules Literal ::= "true" | "false" | [Factor] ;
+
+-- definition-sequence  ::=
+--         definition  { ";"  definition }
+SimpleDef . Definition ::= SimpleDefinition ;
+CompoundDef . Definition ::= CompoundDefinition ;
+separator Definition ";" ;
+
+-- simple-definition ::= atomic-symbol  "=="  term
+-- There looks like there was a change in the gramar
+-- I change term to literal
+SimpleDefinition . SimpleDefinition ::= AtomicSymbol "==" Literal ;
+
+-- compound-definition  ::=
+--   [ "MODULE"  atomic-symbol ]
+--   [ "PRIVATE"  definition-sequence ]
+--   [ "PUBLIC"  definition sequence ]
+--   ( "." | "END" )
+CompoundDefinition . CompoundDefinition 
+  ::= MaybeModule MaybePrivate MaybePublic PossibleEndings ;
+
+PeriodEnd . PossibleEndings ::= "." ;
+EndEnd . PossibleEndings ::= "END" ;
+
+Module . MaybeModule ::= "MODULE" AtomicSymbol ;
+NoModule . MaybeModule ::= ;
+Private . MaybePrivate ::= "PRIVATE" [Definition] ;
+NoPrivate . MaybePrivate ::= ;
+Public . MaybePublic ::= PublicEQ [Definition] ;
+
+rules PublicEQ ::= "DEFINE" | "LIBRA" | "PUBLIC" ;
+
+NoPublic . MaybePublic ::= ;
+
+-- cycle  == {    compound-definition |  term  ( "END" | "." ) }
+DefCycle . Cycle ::= CompoundDefinition ;
+FactorCycle . Cycle ::= [Factor] PossibleEndings ;
+separator Cycle "" ;
+
+--------------------------------------------------------------
+-- Non-needed rules thankcs to BNFC
+--------------------------------------------------------------
+
+
+-- Replaced by String
+-- string-constant  ::=
+--         '"'  { escaped-character | ordinary-character } '"'
+
+-- Replaced by char
+-- character-constant  ::=
+--         "'"  ( escaped-character | ordinary-character )
+
+
+-- ordinary-character  ::=
+--         any character except "\"
+-- token OrdinaryCharacter ((char - ["\\"]) ;
+
+
+
+-- escaped-character  ::=
+--            "\n"                     newline
+--         |  "\t"                     tab
+--         |  "\b"                     backspace
+--         |  "\r"                     carriage return
+--         |  "\f"                     formfeed
+--         |  "\'"                     single quote
+--         |  "\""                     double quote
+--         |  "\ddd"                   ASCII whose value is ddd
+--                                     where ddd are three decimal digits
+-- rules EscapedCharacter ::= "\n" 
+--                          | "\t"  
+--                          | "\'"  
+--                          | "\""  ;
+
+
+
+
